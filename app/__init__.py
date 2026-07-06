@@ -1,11 +1,11 @@
 import os
-
 from flask import Flask
+from dotenv import load_dotenv
 
 from .security import install_security
 
-
 def create_app():
+    load_dotenv()
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 25MB
     app.config["UPLOAD_EXTENSIONS"] = {".csv"}
