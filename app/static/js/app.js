@@ -40,7 +40,7 @@ function chartDefaults() {
   if (typeof Chart === "undefined") return;
   Chart.defaults.color = CHART_TEXT;
   Chart.defaults.borderColor = CHART_GRID;
-  Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 }
 
 function setTopKpis(summary) {
@@ -98,7 +98,7 @@ function setAlerts(recs, ineffCount) {
   box.innerHTML = "";
   const items = (recs || []).slice(0, 5);
   if (!items.length && !ineffCount) {
-    box.innerHTML = `<p class="placeholder-text mb-0">No active alerts.</p>`;
+    box.innerHTML = `<p class="placeholder-text mb-0">System nominal. No active alerts.</p>`;
     return;
   }
   for (const r of items) {
@@ -151,7 +151,7 @@ function setRecs(recs) {
   box.innerHTML = "";
   const list = recs || [];
   if (!list.length) {
-    box.innerHTML = `<p class="energy-placeholder small mb-0">No recommendations.</p>`;
+    box.innerHTML = `<p class="energy-placeholder small mb-0 text-muted">No insights available. Awaiting dataset processing.</p>`;
     return;
   }
   const icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`;
@@ -425,11 +425,11 @@ function renderCharts(factRows) {
 async function populateBuildings() {
   const sel = document.getElementById("buildingSelect");
   if (!sel) return;
-  sel.innerHTML = `<option value="">Loading…</option>`;
+  sel.innerHTML = `<option value="">Retrieving facilities database...</option>`;
   const data = await fetchJSON("/api/buildings");
   sel.innerHTML = "";
   if (!data.buildings.length) {
-    sel.innerHTML = `<option value="">No buildings — upload CSV</option>`;
+    sel.innerHTML = `<option value="">Upload energy dataset to populate registry</option>`;
     return;
   }
   for (const b of data.buildings) {
@@ -464,7 +464,7 @@ async function runAnalysis() {
   const refresh = document.getElementById("refreshBtn");
   const prevText = btn?.textContent;
   if (btn) {
-    btn.textContent = "Running…";
+    btn.textContent = "Executing pipeline...";
     btn.disabled = true;
   }
   if (refresh) refresh.disabled = true;

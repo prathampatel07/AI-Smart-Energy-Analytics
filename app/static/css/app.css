@@ -430,6 +430,23 @@ body {
   border-radius: 4px;
 }
 
+/* --- Enterprise Icons --- */
+i[data-lucide] {
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.icon-sm { width: 14px; height: 14px; }
+.icon-md { width: 16px; height: 16px; }
+.icon-lg { width: 20px; height: 20px; }
+.icon-xl { width: 24px; height: 24px; }
+.icon-xxl { width: 48px; height: 48px; }
+
+/* --- Focus States for Accessibility --- */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

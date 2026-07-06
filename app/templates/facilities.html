@@ -14,7 +14,7 @@
 
   {% if not has_data %}
   <div class="b2b-card text-center p-5">
-    <i data-lucide="building-2" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+    <i data-lucide="building-2" class="icon-xxl mb-3 text-muted"></i>
     <h4>No Facilities Monitored</h4>
     <p class="text-muted">Please upload a valid CSV dataset to populate the facilities registry.</p>
     <a href="{{ url_for('routes.upload_page') }}" class="btn-primary mt-3 d-inline-flex align-items-center gap-2" style="text-decoration:none;">
@@ -40,14 +40,14 @@
           {% for bldg in facilities %}
           <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('routes.dashboard', building_id=bldg.building_id) }}'">
             <td class="ps-4 fw-medium text-white">
-              <i data-lucide="building" style="width: 14px; height: 14px; margin-right: 6px; color: var(--text-muted);"></i>
+              <i data-lucide="building" class="icon-sm me-1 text-muted"></i>
               {{ bldg.building_id }}
             </td>
             <td>
               <span class="badge rounded-pill bg-{{ bldg.health_color }}-subtle text-{{ bldg.health_color }} border border-{{ bldg.health_color }}-subtle">
-                {% if bldg.health == 'Good' %}<i data-lucide="check-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>{% endif %}
-                {% if bldg.health == 'Warning' %}<i data-lucide="alert-triangle" style="width: 12px; height: 12px; margin-right: 4px;"></i>{% endif %}
-                {% if bldg.health == 'Critical' %}<i data-lucide="x-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>{% endif %}
+                {% if bldg.health == 'Good' %}<i data-lucide="check-circle" class="icon-sm me-1"></i>{% endif %}
+                {% if bldg.health == 'Warning' %}<i data-lucide="alert-triangle" class="icon-sm me-1"></i>{% endif %}
+                {% if bldg.health == 'Critical' %}<i data-lucide="x-circle" class="icon-sm me-1"></i>{% endif %}
                 {{ bldg.health }}
               </span>
             </td>

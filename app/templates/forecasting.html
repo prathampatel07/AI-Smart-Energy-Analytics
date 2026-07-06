@@ -14,11 +14,11 @@
     <div class="d-flex gap-3 align-items-center">
       <div style="min-width: 200px;">
         <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
-          <option value="">Loading buildings...</option>
+          <option value="">Retrieving facilities database...</option>
         </select>
       </div>
       <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2">
-        <i data-lucide="play" style="width:16px;height:16px;"></i> Run Forecast
+        <i data-lucide="play" class="icon-md"></i> Run Forecast
       </button>
     </div>
   </div>
@@ -146,7 +146,7 @@ async function runForecast() {
     console.error(err);
     alert(err.message || String(err));
   } finally {
-    btn.innerHTML = `<i data-lucide="play" style="width:16px;height:16px;"></i> Run Forecast`;
+    btn.innerHTML = `<i data-lucide="play" class="icon-md"></i> Run Forecast`;
     btn.disabled = false;
     lucide.createIcons();
   }

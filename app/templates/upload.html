@@ -28,19 +28,19 @@
 
         {% if error %}
         <div class="alert mb-4" style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--accent-danger); color: var(--text-main); font-size: 0.85rem;">
-          <i data-lucide="alert-circle" style="width: 16px; height: 16px; margin-right: 4px; color: var(--accent-danger);"></i>
+          <i data-lucide="alert-circle" class="icon-md me-1 text-danger"></i>
           {{ error }}
         </div>
         {% endif %}
 
         <form method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3 flex-grow-1">
           <div class="upload-zone d-flex flex-column justify-content-center align-items-center flex-grow-1 mb-3">
-            <i data-lucide="file-spreadsheet" class="upload-icon" style="width: 48px; height: 48px;"></i>
+            <i data-lucide="file-spreadsheet" class="upload-icon icon-xxl"></i>
             <p class="text-muted mb-3" style="font-size: 0.85rem;">Select a valid CSV file to begin ingestion.</p>
             <input class="form-control w-75" type="file" name="file" accept=".csv" required />
           </div>
           <button type="submit" class="btn-primary w-100">
-            <i data-lucide="upload" style="width:16px; height:16px;"></i> Execute Upload
+            <i data-lucide="upload" class="icon-md"></i> Execute Upload
           </button>
         </form>
         
@@ -93,15 +93,6 @@
                 <div class="rec-detail">Process thousands of facilities simultaneously using the building_id schema.</div>
               </div>
             </div>
-          </div>
-        </div>
-        
-        <div class="mt-auto p-3 rounded-3" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle);">
-          <div class="d-flex align-items-center gap-2 mb-1" style="color: var(--accent-success); font-weight: 600; font-size: 0.85rem;">
-            <i data-lucide="code" style="width: 16px; height: 16px;"></i> Testing & Validation
-          </div>
-          <div class="text-muted" style="font-size: 0.75rem;">
-            Generate synthetic baseline data: <code class="text-cyan bg-transparent p-0">python scripts\generate_sample_data.py --out data\sample_energy.csv</code>
           </div>
         </div>
       </div>

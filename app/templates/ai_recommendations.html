@@ -14,11 +14,11 @@
     <div class="d-flex gap-3 align-items-center">
       <div style="min-width: 200px;">
         <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
-          <option value="">Loading buildings...</option>
+          <option value="">Retrieving facilities database...</option>
         </select>
       </div>
       <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2">
-        <i data-lucide="zap" style="width:16px;height:16px;"></i> Generate Insights
+        <i data-lucide="zap" class="icon-md"></i> Generate Insights
       </button>
     </div>
   </div>
@@ -90,7 +90,7 @@ async function fetchRecommendations() {
         item.innerHTML = `
           <div class="d-flex align-items-start gap-3">
             <div class="bg-cyan-subtle text-cyan p-2 rounded-circle mt-1 flex-shrink-0" style="background: rgba(14,165,233,0.1);">
-              <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
+              <i data-lucide="check-circle" class="icon-lg"></i>
             </div>
             <div>
               <h5 class="mb-1" style="color: var(--text-main); font-size: 1.05rem;">${escapeHtml(rec.title)}</h5>
@@ -109,7 +109,7 @@ async function fetchRecommendations() {
     console.error(err);
     alert(err.message || String(err));
   } finally {
-    btn.innerHTML = `<i data-lucide="zap" style="width:16px;height:16px;"></i> Generate Insights`;
+    btn.innerHTML = `<i data-lucide="zap" class="icon-md"></i> Generate Insights`;
     btn.disabled = false;
     lucide.createIcons();
   }

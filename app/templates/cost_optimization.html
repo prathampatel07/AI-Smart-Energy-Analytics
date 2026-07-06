@@ -14,11 +14,11 @@
     <div class="d-flex gap-3 align-items-center">
       <div style="min-width: 200px;">
         <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
-          <option value="">Loading buildings...</option>
+          <option value="">Retrieving facilities database...</option>
         </select>
       </div>
       <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2">
-        <i data-lucide="calculator" style="width:16px;height:16px;"></i> Calculate Costs
+        <i data-lucide="calculator" class="icon-md"></i> Calculate Costs
       </button>
     </div>
   </div>
@@ -111,7 +111,7 @@ async function runCostAnalysis() {
     console.error(err);
     alert(err.message || String(err));
   } finally {
-    btn.innerHTML = `<i data-lucide="calculator" style="width:16px;height:16px;"></i> Calculate Costs`;
+    btn.innerHTML = `<i data-lucide="calculator" class="icon-md"></i> Calculate Costs`;
     btn.disabled = false;
     lucide.createIcons();
   }
