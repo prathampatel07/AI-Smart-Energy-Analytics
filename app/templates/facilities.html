@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% set active_page = 'facilities' %}
+
+{% block title %}Facilities | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">Facilities & Sensors</h1>
+      <p class="page-subtitle">Monitor operational status and aggregate statistics for all connected entities.</p>
+    </div>
+  </div>
+
+  {% if not has_data %}
+  <div class="b2b-card text-center p-5">
+    <i data-lucide="building-2" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+    <h4>No Facilities Monitored</h4>
+    <p class="text-muted">Please upload a valid CSV dataset to populate the facilities registry.</p>
+    <a href="{{ url_for('routes.upload_page') }}" class="btn-primary mt-3 d-inline-flex align-items-center gap-2" style="text-decoration:none;">
+      <i data-lucide="upload"></i> Upload Data
+    </a>
+  </div>
+  {% else %}
+
+  <div class="b2b-card mb-4 p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead style="background: rgba(15, 23, 42, 0.4);">
+          <tr>
+            <th class="ps-4">Facility ID</th>
+            <th>Health Status</th>
+            <th class="text-end">Last Reading (kWh)</th>
+            <th class="text-end">Avg Load (kWh)</th>
+            <th class="text-end">Total Load (kWh)</th>
+            <th class="text-end pe-4">Estimated Cost</th>
+          </tr>
+        </thead>
+        <tbody style="border-top: 1px solid var(--border-subtle);">
+          {% for bldg in facilities %}
+          <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('routes.dashboard', building_id=bldg.building_id) }}'">
+            <td class="ps-4 fw-medium text-white">
+              <i data-lucide="building" style="width: 14px; height: 14px; margin-right: 6px; color: var(--text-muted);"></i>
+              {{ bldg.building_id }}
+            </td>
+            <td>
+              <span class="badge rounded-pill bg-{{ bldg.health_color }}-subtle text-{{ bldg.health_color }} border border-{{ bldg.health_color }}-subtle">
+                {% if bldg.health == 'Good' %}<i data-lucide="check-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>{% endif %}
+                {% if bldg.health == 'Warning' %}<i data-lucide="alert-triangle" style="width: 12px; height: 12px; margin-right: 4px;"></i>{% endif %}
+                {% if bldg.health == 'Critical' %}<i data-lucide="x-circle" style="width: 12px; height: 12px; margin-right: 4px;"></i>{% endif %}
+                {{ bldg.health }}
+              </span>
+            </td>
+            <td class="text-end" style="font-family: var(--font-mono);">{{ "{:,.1f}".format(bldg.last_kwh) }}</td>
+            <td class="text-end" style="font-family: var(--font-mono); color: var(--text-muted);">{{ "{:,.1f}".format(bldg.avg_kwh) }}</td>
+            <td class="text-end fw-medium" style="font-family: var(--font-mono);">{{ "{:,.0f}".format(bldg.total_kwh) }}</td>
+            <td class="text-end pe-4" style="font-family: var(--font-mono); color: var(--accent-danger);">
+              {{ settings.currency }} {{ "{:,.2f}".format(bldg.total_cost) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

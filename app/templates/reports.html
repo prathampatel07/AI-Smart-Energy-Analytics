@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% set active_page = 'reports' %}
+
+{% block title %}Reports | Energy Platform{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+@media print {
+  /* Hide sidebar and navigation elements during print */
+  .sidebar, .top-nav, .page-header button, .no-print {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+  .b2b-card {
+    border: 1px solid #ccc !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+  .b2b-card-title {
+    color: black !important;
+  }
+  .text-muted {
+    color: #666 !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  h1, h2, h3, h4, h5, h6, p, div {
+    color: black !important;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">Executive Reports</h1>
+      <p class="page-subtitle">Exportable summaries for stakeholder distribution.</p>
+    </div>
+    {% if has_data %}
+    <div class="d-flex gap-3 no-print">
+      <a href="{{ url_for('routes.download_reports') }}" class="btn btn-outline-light d-inline-flex align-items-center gap-2" style="border-color: var(--border-subtle);">
+        <i data-lucide="download"></i> Download CSV
+      </a>
+      <button onclick="window.print()" class="btn-primary d-inline-flex align-items-center gap-2">
+        <i data-lucide="printer"></i> Print to PDF
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if not has_data %}
+  <div class="b2b-card text-center p-5">
+    <i data-lucide="file-bar-chart" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+    <h4>No Data for Reports</h4>
+    <p class="text-muted">Please upload a valid CSV dataset to generate reports.</p>
+    <a href="{{ url_for('routes.upload_page') }}" class="btn-primary mt-3 d-inline-flex align-items-center gap-2" style="text-decoration:none;">
+      <i data-lucide="upload"></i> Upload Data
+    </a>
+  </div>
+  {% else %}
+
+  <!-- Print-ready Report Canvas -->
+  <div class="report-canvas" id="printableReport">
+    <div class="b2b-card mb-4" style="border-top: 4px solid var(--accent-primary);">
+      <h2 class="h4 mb-4">Executive Energy Summary</h2>
+      
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <table class="table table-sm table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="text-muted w-50">Organization</td>
+                <td class="fw-medium text-white">{{ settings.org_name }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Reporting Period</td>
+                <td class="fw-medium text-white">{{ report_data.start_date }} to {{ report_data.end_date }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Active Facilities</td>
+                <td class="fw-medium text-white">{{ report_data.buildings }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <table class="table table-sm table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="text-muted w-50">Total Consumption</td>
+                <td class="fw-medium text-cyan" style="font-family: var(--font-mono);">{{ "{:,.0f}".format(report_data.total_kwh) }} kWh</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Estimated Cost</td>
+                <td class="fw-medium text-danger" style="font-family: var(--font-mono);">{{ settings.currency }} {{ "{:,.2f}".format(report_data.total_cost) }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Applied Tariff Rate</td>
+                <td class="fw-medium text-white" style="font-family: var(--font-mono);">{{ settings.currency }} {{ settings.tariff_rate }} / kWh</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="alert mb-0" style="background: rgba(14, 165, 233, 0.1); border-left: 3px solid var(--accent-primary); color: var(--text-main);">
+        <strong>Conclusion:</strong> The system has processed {{ "{:,.0f}".format(report_data.total_kwh) }} kWh of load across {{ report_data.buildings }} tracked facilities. 
+        For granular anomaly detection and forecasting, please review individual facility profiles via the Analytics module.
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Energy Analytics Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['"Inter"', 'sans-serif'],
+            body: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+              glow: 'rgba(6, 182, 212, 0.4)',
+            },
+            green: {
+              400: '#4ade80',
+              glow: 'rgba(74, 222, 128, 0.3)',
+            },
+            slate: {
+              900: '#0f172a',
+              950: '#020617',
+            }
+          },
+          animation: {
+            'flow': 'flow 2s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            flow: {
+              '0%': { strokeDashoffset: '20' },
+              '100%': { strokeDashoffset: '0' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            'pulse-glow': {
+              '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.5))' },
+              '50%': { opacity: .7, filter: 'drop-shadow(0 0 4px rgba(34, 211, 238, 0.2))' },
+            }
+          }
+        },
+      },
+    };
+  </script>
+  <style>
+    body { background: #020617; margin: 0; color: #f8fafc; font-family: "Inter", sans-serif; overflow-x: hidden; }
+    
+    .liquid-glass {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+      position: relative;
+    }
+    
+    .liquid-glass-strong {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(34, 211, 238, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+      position: relative;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.4); }
+
+    /* Fake chart line gradient */
+    .chart-gradient { fill: url(#chartGrad); }
+    .chart-line { stroke: #22d3ee; stroke-width: 2; fill: none; filter: drop-shadow(0 2px 4px rgba(34, 211, 238, 0.4)); }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@11.11.17/dist/framer-motion.js"></script>
+  <script>
+    window.Motion = window.FramerMotion || window.framerMotion || window.framermotion || window.motion || window.Motion || null;
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-50 antialiased">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+    const { motion, useInView, useAnimation } = window.Motion;
+
+    // Direct MP4 URLs
+    const HERO_VIDEO = 'https://videos.pexels.com/video-files/7832757/7832757-hd_1920_1080_30fps.mp4';
+    const CAP_VIDEO = 'https://videos.pexels.com/video-files/5538825/5538825-hd_1920_1080_30fps.mp4';
+
+    function fadeTo(video, target, durationMs, getRafRef) {
+      const start = performance.now();
+      const from = parseFloat(video.style.opacity) || 0;
+      const delta = target - from;
+      let rafId;
+      const step = (now) => {
+        const t = Math.min(1, (now - start) / durationMs);
+        video.style.opacity = String(from + delta * t);
+        if (t < 1) { rafId = requestAnimationFrame(step); getRafRef().current = rafId; }
+        else { getRafRef().current = null; }
+      };
+      if (getRafRef().current != null) cancelAnimationFrame(getRafRef().current);
+      rafId = requestAnimationFrame(step); getRafRef().current = rafId;
+    }
+
+    function FadingVideo({ src, className, style }) {
+      const videoRef = useRef(null);
+      const rafRef = useRef(null);
+      const fadingOutRef = useRef(false);
+      const getRafRef = useCallback(() => rafRef, []);
+
+      useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+        const FADE_MS = 800;
+        const FADE_OUT_LEAD = 0.85;
+
+        const onLoadedData = () => {
+          video.style.opacity = '0';
+          video.play().catch(() => {});
+          fadeTo(video, 1, FADE_MS, getRafRef);
+        };
+        const onTimeUpdate = () => {
+          const dur = video.duration;
+          if (!dur || !isFinite(dur)) return;
+          const remain = dur - video.currentTime;
+          if (!fadingOutRef.current && remain <= FADE_OUT_LEAD && remain > 0) {
+            fadingOutRef.current = true;
+            fadeTo(video, 0, FADE_MS, getRafRef);
+          }
+        };
+        const onEnded = () => {
+          video.style.opacity = '0';
+          setTimeout(() => {
+            video.currentTime = 0;
+            video.play().catch(() => {});
+            fadingOutRef.current = false;
+            fadeTo(video, 1, FADE_MS, getRafRef);
+          }, 100);
+        };
+
+        video.addEventListener('loadeddata', onLoadedData);
+        video.addEventListener('timeupdate', onTimeUpdate);
+        video.addEventListener('ended', onEnded);
+        return () => {
+          if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+          video.removeEventListener('loadeddata', onLoadedData);
+          video.removeEventListener('timeupdate', onTimeUpdate);
+          video.removeEventListener('ended', onEnded);
+        };
+      }, [src, getRafRef]);
+
+      return <video ref={videoRef} src={src} className={className} style={{ opacity: 0, ...style }} autoPlay muted playsInline preload="auto" />;
+    }
+
+    // --- Enterprise Lucide Icons ---
+    const Icon = ({ d, className }) => (
+      <svg className={className || "h-6 w-6"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        {d.map((path, i) => <path key={i} d={path} />)}
+      </svg>
+    );
+    const IcoUpload = () => <Icon d={["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M17 8l-5-5-5 5", "M12 3v12"]} />;
+    const IcoDatabase = () => <Icon d={["M12 5c-4.418 0-8 1.343-8 3s3.582 3 8 3 8-1.343 8-3-3.582-3-8-3z", "M4 8v8c0 1.657 3.582 3 8 3s8-1.343 8-3V8"]} />;
+    const IcoCpu = () => <Icon d={["M4 4h16v16H4z", "M9 9h6v6H9z", "M9 1v3", "M15 1v3", "M9 20v3", "M15 20v3", "M20 9h3", "M20 14h3", "M1 9h3", "M1 14h3"]} />;
+    const IcoZap = () => <Icon d={["M13 2L3 14h9l-1 8 10-12h-9l1-8z"]} />;
+    const IcoTarget = () => <Icon d={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M12 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"]} />;
+    const IcoBarChart = () => <Icon d={["M12 20V10", "M18 20V4", "M6 20v-4"]} />;
+    const IcoAlert = () => <Icon d={["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z", "M12 9v4", "M12 17h.01"]} />;
+    const IcoTrending = () => <Icon d={["M23 6l-9.5 9.5-5-5L1 18", "M17 6h6v6"]} />;
+    const IcoShield = () => <Icon d={["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"]} />;
+    const IcoArrowRight = () => <Icon d={["M5 12h14", "M12 5l7 7-7 7"]} />;
+    const IcoClock = () => <Icon d={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 6v6l4 2"]} />;
+    const IcoBuilding = () => <Icon d={["M4 22V6a2 2 0 0 1 2-2h4", "M14 20V2a2 2 0 0 1 2-2h4", "M4 10h4", "M4 16h4", "M14 6h4", "M14 12h4"]} />;
+
+    // Animated Counter
+    function AnimatedNumber({ value, suffix = "", duration = 2 }) {
+      const [count, setCount] = useState(0);
+      const ref = useRef(null);
+      const inView = useInView(ref, { once: true, margin: "-100px" });
+
+      useEffect(() => {
+        if (!inView) return;
+        let start = 0;
+        const end = parseFloat(value);
+        if (start === end) return;
+        
+        let startTime = null;
+        const step = (timestamp) => {
+          if (!startTime) startTime = timestamp;
+          const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+          setCount((end * easeOut).toFixed(value % 1 !== 0 ? 1 : 0));
+          if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }, [inView, value, duration]);
+
+      return <span ref={ref}>{count}{suffix}</span>;
+    }
+
+    // Dashboard Mockup Component
+    function FloatingDashboard() {
+      return (
+        <motion.div 
+          className="liquid-glass-strong w-full max-w-2xl rounded-2xl p-4 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-cyan-500/30 hidden lg:block"
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 0.5 }}
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center border border-cyan-500/40">
+                <IcoBarChart className="w-4 h-4 text-cyan-400" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-white">Facility Alpha</div>
+                <div className="text-[10px] text-cyan-400">Live AI Monitoring</div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div> Status: Optimal</span>
+              <span className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px]">Model: XGBoost v2</span>
+            </div>
+          </div>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+              <div className="text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Actual Load</div>
+              <div className="text-xl font-bold text-white"><AnimatedNumber value={2450} duration={1.5} /> <span className="text-xs text-slate-500 font-normal">kWh</span></div>
+            </div>
+            <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+              <div className="text-[10px] text-slate-400 mb-1 uppercase tracking-wider">AI Forecast</div>
+              <div className="text-xl font-bold text-cyan-400"><AnimatedNumber value={2410} duration={1.5} /> <span className="text-xs text-slate-500 font-normal">kWh</span></div>
+            </div>
+            <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+              <div className="text-[10px] text-slate-400 mb-1 uppercase tracking-wider">Cost Optimization</div>
+              <div className="text-xl font-bold text-green-400"><AnimatedNumber value={12.4} suffix="%" duration={1.5} /> <span className="text-xs text-green-600 font-normal">↓</span></div>
+            </div>
+          </div>
+
+          {/* Fake Chart */}
+          <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-800 h-40 relative overflow-hidden">
+            <div className="text-xs text-slate-300 mb-2">48H Consumption vs Prediction</div>
+            <svg viewBox="0 0 400 100" className="w-full h-24 preserve-aspect-ratio-none" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(34,211,238,0.2)" />
+                  <stop offset="100%" stopColor="rgba(34,211,238,0)" />
+                </linearGradient>
+              </defs>
+              {/* Actual (Grey dashed) */}
+              <path d="M0,80 Q50,60 100,70 T200,40 T300,50 T400,20" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" />
+              {/* Predicted (Cyan Glow) */}
+              <path d="M0,85 Q50,65 100,68 T200,45 T300,48 T400,25" className="chart-line" />
+              <path d="M0,85 Q50,65 100,68 T200,45 T300,48 T400,25 L400,100 L0,100 Z" className="chart-gradient" />
+            </svg>
+            {/* Tooltip Overlay */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-800 border border-slate-700 px-2 py-1 rounded shadow-lg">
+              <div className="text-[9px] text-slate-400">14:00</div>
+              <div className="text-[11px] font-bold text-cyan-400">124 kWh</div>
+            </div>
+          </div>
+
+          {/* Alert Strip */}
+          <div className="mt-4 bg-orange-500/10 border border-orange-500/20 rounded-lg p-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <IcoAlert className="w-4 h-4 text-orange-400" />
+              <span className="text-xs text-orange-200">Anomaly detected: HVAC-2 exceeding predictive baseline by 14%.</span>
+            </div>
+            <button className="text-[10px] bg-orange-500/20 text-orange-300 px-2 py-1 rounded hover:bg-orange-500/30 transition-colors">Inspect</button>
+          </div>
+        </motion.div>
+      );
+    }
+
+
+
+    // App Component
+    function App() {
+      return (
+        <div className="min-h-screen relative flex flex-col font-body">
+          {/* Hero Section */}
+          <section className="relative min-h-screen flex flex-col bg-black overflow-hidden">
+            <FadingVideo
+              src={HERO_VIDEO}
+              className="absolute left-1/2 top-0 -translate-x-1/2 object-cover object-top z-0"
+              style={{ width: '120%', height: '120%' }}
+            />
+            
+            {/* Cinematic Readability Vignette */}
+            <div className="absolute inset-0 z-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 15%, rgba(0,0,0,0.9) 100%)' }}></div>
+
+            {/* Navbar */}
+            <nav className="relative z-50 px-6 py-6 transition-all duration-300">
+              <div className="max-w-[1400px] mx-auto bg-slate-900/30 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-3 flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full border-2 border-cyan-500/50 flex items-center justify-center">
+                    <IcoZap className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-lg text-white leading-tight">Smart Energy Analytics</span>
+                    <span className="text-[10px] font-bold text-cyan-500 tracking-wider">AI-POWERED INSIGHTS</span>
+                  </div>
+                </div>
+                
+                <div className="hidden lg:flex items-center gap-8">
+                  {[{l: 'Home', active: true}, {l: 'Dashboard', h: '/dashboard'}, {l: 'Upload CSV', h: '/upload'}, {l: 'Insights API', h: '/api/insights?building_id=A&rate_per_kwh=0.15&horizon_hours=48'}, {l: 'Documentation', h: '#'}, {l: 'About Us', h: '#'}].map(i => (
+                    <a key={i.l} href={i.h || '#'} className={`text-sm font-medium transition-colors relative pb-1 ${i.active ? 'text-cyan-400' : 'text-slate-300 hover:text-white'}`}>
+                      {i.l}
+                      {i.active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 rounded-full"></span>}
+                    </a>
+                  ))}
+                </div>
+                
+                <button 
+                  onClick={() => window.location.href = '/dashboard'}
+                  className="hidden md:flex border border-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-white/10 transition-all items-center gap-2"
+                >
+                  Launch Dashboard <IcoArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </nav>
+
+            <div className="relative z-10 flex flex-1 flex-col justify-center max-w-[1400px] mx-auto px-6 w-full pt-16 pb-12">
+              {/* Hero Content */}
+              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-3xl">
+                <div className="inline-block px-4 py-1.5 rounded-full border border-cyan-500/30 bg-slate-900/50 backdrop-blur-sm mb-6">
+                  <span className="text-[11px] font-bold text-cyan-400 tracking-wider uppercase">AI-DRIVEN ENERGY INTELLIGENCE</span>
+                </div>
+                
+                <h1 className="text-6xl md:text-[5.5rem] font-extrabold text-white leading-[1.05] tracking-tight mb-6">
+                  Every Data Point <br/> Hides a <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400">Smarter Energy Decision.</span>
+                </h1>
+                
+                <div className="w-12 h-1 bg-cyan-500 mb-6"></div>
+                
+                <p className="text-xl text-[#f8fafc] mb-12 max-w-[620px] font-semibold leading-[1.7] tracking-[0.015em] [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">
+                  Empower smarter energy decisions through AI-powered forecasting, anomaly detection, and intelligent optimization for industrial and commercial energy systems.
+                </p>
+                
+                <div className="flex flex-wrap items-center gap-4 mb-16">
+                  <button onClick={() => window.location.href = '/dashboard'} className="bg-gradient-to-r from-cyan-400 to-green-400 text-slate-950 px-8 py-3.5 rounded-xl font-bold text-sm hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all flex items-center gap-2">
+                    Explore Dashboard <IcoArrowRight className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => window.location.href = '/upload'} className="bg-slate-900/40 backdrop-blur-md border border-white/20 px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-white/10 transition-all text-white flex items-center gap-2">
+                    Upload Your Data <IcoUpload className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+              
+              <div className="flex-1"></div>
+
+              {/* KPI Cards Row */}
+              <div className="w-full">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {[
+                    { icon: IcoTarget, stat: "97.8%", label: "Forecast Accuracy", sub: "AI model performance" },
+                    { icon: IcoClock, stat: "48 Hours", label: "Prediction Horizon", sub: "Plan ahead with confidence" },
+                    { icon: IcoBuilding, stat: "Multi", label: "Building Monitoring", sub: "One platform. All sites." },
+                    { icon: IcoTrending, stat: "30%", label: "Potential Savings", sub: "Reduce cost, boost efficiency" },
+                    { icon: IcoZap, stat: "24/7", label: "Real-time Analytics", sub: "Always-on energy intelligence" }
+                  ].map((kpi, idx) => (
+                    <motion.div 
+                      key={idx}
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + (idx * 0.1), duration: 0.6 }}
+                      className="bg-slate-900/30 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-slate-800/50 hover:border-white/20 transition-all flex items-start gap-4"
+                    >
+                      <div className="mt-1">
+                        <kpi.icon className="w-8 h-8 text-cyan-400" />
+                      </div>
+                      <div>
+                        <div className="text-3xl font-bold text-white mb-1 leading-none">
+                          {kpi.stat.includes("Hours") ? (
+                            <><AnimatedNumber value={parseFloat(kpi.stat)} duration={1.5} /> <span className="text-lg font-semibold text-slate-300 ml-1">Hours</span></>
+                          ) : (
+                            kpi.stat.match(/[\d.]+/) ? <AnimatedNumber value={parseFloat(kpi.stat)} suffix={kpi.stat.replace(/[\d.]+/, '')} duration={1.5} /> : kpi.stat
+                          )}
+                        </div>
+                        <div className="text-[13px] font-semibold text-white leading-tight mb-1">{kpi.label}</div>
+                        <div className="text-[11px] text-slate-400 leading-tight">{kpi.sub}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Scroll Indicator */}
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center opacity-70 z-10"
+            >
+              <div className="w-6 h-9 border border-white/50 rounded-full flex justify-center p-1 mb-1">
+                <motion.div 
+                  animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity }}
+                  className="w-1 h-1.5 bg-white rounded-full"
+                ></motion.div>
+              </div>
+              <span className="text-[9px] text-white tracking-wider">Scroll to explore</span>
+            </motion.div>
+          </section>
+
+
+          {/* Features Grid */}
+          <section className="relative min-h-screen bg-black overflow-hidden py-32 border-t border-slate-900">
+            <FadingVideo
+              src={CAP_VIDEO}
+              className="absolute inset-0 z-0 h-full w-full object-cover"
+              style={{}}
+            />
+            
+            <div className="relative z-10 max-w-7xl mx-auto px-6">
+              <div className="text-center mb-20 max-w-3xl mx-auto">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">Enterprise Capabilities</h2>
+                <p className="text-slate-400 text-lg leading-relaxed">A complete suite of tools designed to identify inefficiencies, prevent peak demand charges, and automate energy intelligence across your portfolio.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {[
+                  { i: IcoUpload, t: "CSV Ingestion", d: "Secure, fast ingestion of raw time-series data with automatic schema validation." },
+                  { i: IcoDatabase, t: "Data Cleaning", d: "Autonomous handling of missing values, outliers, and timestamp deduplication." },
+                  { i: IcoTarget, t: "ML Forecasting", d: "XGBoost-powered predictions mapping historical trends to future consumption." },
+                  { i: IcoAlert, t: "Loss Detection", d: "Identify operational inefficiencies comparing actual usage vs predictive baselines." },
+                  { i: IcoTrending, t: "Cost Optimization", d: "Tariff-aware analytics to minimize peak charges and optimize runtime schedules." },
+                  { i: IcoBarChart, t: "Real-Time Monitoring", d: "Live KPI tracking and visualization for immediate situational awareness." },
+                  { i: IcoCpu, t: "Multi-Building Scale", d: "Manage hundreds of facilities through a single unified analytics fact table." },
+                  { i: IcoShield, t: "Smart Recommendations", d: "Prescriptive insights to immediately rectify detected anomalies and save costs." }
+                ].map((feat, idx) => (
+                  <motion.div 
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="liquid-glass p-8 rounded-2xl hover:-translate-y-2 transition-all duration-300 hover:border-cyan-500/50 hover:shadow-[0_15px_40px_rgba(34,211,238,0.15)] group flex flex-col h-full"
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center mb-6 group-hover:border-cyan-500/50 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.2)] transition-all">
+                      <feat.i className="w-7 h-7 text-slate-300 group-hover:text-cyan-400 transition-colors" />
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-3">{feat.t}</h4>
+                    <p className="text-sm text-slate-400 leading-relaxed flex-grow">{feat.d}</p>
+                  </motion.div>
+                ))}
+              </div>
+              
+              <div className="mt-24 text-center">
+                <button onClick={() => window.location.href = '/dashboard'} className="liquid-glass-strong inline-flex items-center gap-3 px-10 py-5 rounded-2xl text-white font-bold text-lg hover:-translate-y-1 hover:border-cyan-400/50 hover:shadow-[0_15px_30px_rgba(34,211,238,0.2)] transition-all">
+                  Launch Platform Dashboard <IcoArrowRight className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

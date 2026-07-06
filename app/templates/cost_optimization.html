@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% set active_page = 'cost_optimization' %}
+
+{% block title %}Cost Optimization | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">Financial & Cost Optimization</h1>
+      <p class="page-subtitle">Track operational expenditure, estimate future expenses, and identify cost recovery opportunities.</p>
+    </div>
+    
+    <div class="d-flex gap-3 align-items-center">
+      <div style="min-width: 200px;">
+        <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
+          <option value="">Loading buildings...</option>
+        </select>
+      </div>
+      <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2">
+        <i data-lucide="calculator" style="width:16px;height:16px;"></i> Calculate Costs
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title text-cyan mb-3">Historical Spend</h3>
+        <div class="fs-2 fw-bold text-white mb-2" id="costCurrent" style="font-family: var(--font-mono);">--</div>
+        <p class="text-muted small">Actual billing based on consumption.</p>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title text-success mb-3">Predicted Spend</h3>
+        <div class="fs-2 fw-bold text-white mb-2" id="costPredictedHist" style="font-family: var(--font-mono);">--</div>
+        <p class="text-muted small">Optimized baseline estimate.</p>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="b2b-card h-100" style="border: 1px solid var(--accent-danger);">
+        <h3 class="b2b-card-title text-danger mb-3">Cost Exposure</h3>
+        <div class="fs-2 fw-bold text-danger mb-2" id="potentialSavings" style="font-family: var(--font-mono);">--</div>
+        <p class="text-muted small">Capital lost to inefficiency over forecast baseline.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-xl-8">
+      <div class="b2b-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h3 class="b2b-card-title mb-0">
+            <i data-lucide="bar-chart"></i> Daily Cost Variance (Actual vs Expected)
+          </h3>
+        </div>
+        <div class="chart-container large" style="height: 350px;">
+          <canvas id="costChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-xl-4">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-4">
+          <i data-lucide="pie-chart"></i> Optimization Ratio
+        </h3>
+        <div class="text-center mb-4">
+          <div class="d-inline-block position-relative" style="width: 200px; height: 200px;">
+            <canvas id="savingsDonutChart"></canvas>
+            <div class="position-absolute top-50 start-50 translate-middle text-center w-100" style="margin-top: 10px;">
+              <div class="text-muted small">Aligned</div>
+              <div class="fw-bold" style="font-size: 1.5rem; color: var(--text-main);" id="donutCenterLabel">—</div>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small text-center px-3">
+          Percentage of cost that aligns precisely with the optimized AI forecast vs standard operational deviation.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const preselectBuilding = "{{ preselect_building }}";
+
+async function runCostAnalysis() {
+  const building = document.getElementById("buildingSelect").value;
+  if (!building) return;
+  
+  const btn = document.getElementById("runBtn");
+  btn.textContent = "Calculating...";
+  btn.disabled = true;
+  
+  try {
+    const url = `/api/insights?building_id=${encodeURIComponent(building)}`;
+    const data = await fetchJSON(url);
+    
+    // Utilize app.js functions for cost strip and charts
+    const rate = "{{ settings.tariff_rate }}";
+    setCostStrip(data.fact_table, Number(rate));
+    renderCharts(data.fact_table);
+    renderDonut(data.summary);
+    
+  } catch (err) {
+    console.error(err);
+    alert(err.message || String(err));
+  } finally {
+    btn.innerHTML = `<i data-lucide="calculator" style="width:16px;height:16px;"></i> Calculate Costs`;
+    btn.disabled = false;
+    lucide.createIcons();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await populateBuildings();
+  const sel = document.getElementById("buildingSelect");
+  if (preselectBuilding) {
+    sel.value = preselectBuilding;
+    setTimeout(runCostAnalysis, 100);
+  }
+  document.getElementById("runBtn").addEventListener("click", runCostAnalysis);
+});
+</script>
+{% endblock %}

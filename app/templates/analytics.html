@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% set active_page = 'analytics' %}
+
+{% block title %}Analytics | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">Enterprise Analytics</h1>
+      <p class="page-subtitle">Platform-wide data aggregation and consumption trends.</p>
+    </div>
+  </div>
+
+  {% if not has_data %}
+  <div class="b2b-card text-center p-5">
+    <i data-lucide="inbox" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+    <h4>No Telemetry Data Available</h4>
+    <p class="text-muted">Please upload a valid CSV dataset to generate analytics.</p>
+    <a href="{{ url_for('routes.upload_page') }}" class="btn-primary mt-3 d-inline-flex align-items-center gap-2" style="text-decoration:none;">
+      <i data-lucide="upload"></i> Upload Data
+    </a>
+  </div>
+  {% else %}
+
+  <!-- KPI Strip -->
+  <div class="row g-3 mb-4 align-items-stretch">
+    <div class="col-12 col-md-6">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title">
+          <i data-lucide="building"></i> Tracked Facilities
+        </h3>
+        <div class="mt-auto pt-3">
+          <div class="kpi-value">{{ total_buildings }}</div>
+          <div class="kpi-trend trend-neutral mt-2">Active sensors</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title text-cyan">
+          <i data-lucide="activity"></i> Total Platform Load
+        </h3>
+        <div class="mt-auto pt-3">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value">{{ "{:,.0f}".format(total_kwh) }}</div>
+            <div class="kpi-unit">kWh</div>
+          </div>
+          <div class="kpi-trend trend-neutral mt-2">Cumulative aggregate</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-lg-8">
+      <div class="b2b-card mb-4">
+        <h3 class="b2b-card-title mb-3">
+          <i data-lucide="bar-chart-2"></i> Peak Hourly Consumption
+        </h3>
+        <p class="text-muted" style="font-size: 0.75rem;">Average energy draw grouped by hour of day across all facilities.</p>
+        <div class="chart-container large">
+          <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-3">
+          <i data-lucide="list"></i> Highest Consumers
+        </h3>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Facility ID</th>
+                <th class="text-end">Total Load (kWh)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for bldg in building_totals[:10] %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('routes.dashboard', building_id=bldg.building_id) }}" class="text-cyan text-decoration-none fw-medium">
+                    {{ bldg.building_id }}
+                  </a>
+                </td>
+                <td class="text-end" style="font-family: var(--font-mono);">
+                  {{ "{:,.1f}".format(bldg.energy_kwh) }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const hourlyData = {{ hourly_avg|tojson }};
+  
+  if (typeof Chart !== 'undefined' && hourlyData.length > 0) {
+    Chart.defaults.color = "#94a3b8";
+    Chart.defaults.borderColor = "rgba(255, 255, 255, 0.08)";
+    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+    const ctx = document.getElementById('hourlyChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: hourlyData.map(d => String(d.hour).padStart(2, '0') + ':00'),
+          datasets: [{
+            label: 'Avg Load (kWh)',
+            data: hourlyData.map(d => d.energy_kwh),
+            borderColor: 'rgba(14, 165, 233, 1)',
+            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 3,
+            pointBackgroundColor: 'rgba(14, 165, 233, 1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

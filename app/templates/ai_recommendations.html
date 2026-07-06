@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% set active_page = 'ai_recommendations' %}
+
+{% block title %}AI Recommendations | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">AI Recommendations</h1>
+      <p class="page-subtitle">Actionable insights generated from machine learning predictions and anomaly detection.</p>
+    </div>
+    
+    <div class="d-flex gap-3 align-items-center">
+      <div style="min-width: 200px;">
+        <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
+          <option value="">Loading buildings...</option>
+        </select>
+      </div>
+      <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2">
+        <i data-lucide="zap" style="width:16px;height:16px;"></i> Generate Insights
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-xl-8">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-4">
+          <i data-lucide="lightbulb"></i> Identified Opportunities
+        </h3>
+        <div id="aiRecsContainer">
+          <p class="text-muted">Select a facility and click Generate Insights to view recommendations.</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-xl-4">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-4">
+          <i data-lucide="shield-alert"></i> Inefficiency Score
+        </h3>
+        <div class="text-center mb-4">
+          <div class="d-inline-block position-relative" style="width: 160px; height: 160px;">
+            <canvas id="ineffGaugeChart"></canvas>
+            <div class="position-absolute top-50 start-50 translate-middle text-center w-100">
+              <div class="text-muted small">Exposure</div>
+              <div class="fw-bold" style="font-size: 1.2rem; color: var(--text-main);" id="ineffGaugeValue">—</div>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small text-center px-3">
+          This gauge represents financial exposure due to historical inefficiencies detected by comparing actual vs predicted loads.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const preselectBuilding = "{{ preselect_building }}";
+
+async function fetchRecommendations() {
+  const building = document.getElementById("buildingSelect").value;
+  if (!building) return;
+  
+  const btn = document.getElementById("runBtn");
+  btn.textContent = "Analyzing...";
+  btn.disabled = true;
+  
+  try {
+    const url = `/api/insights?building_id=${encodeURIComponent(building)}`;
+    const data = await fetchJSON(url);
+    
+    // Render Gauge
+    renderGauge(sumWaste(data.fact_table));
+    
+    // Render Recs
+    const container = document.getElementById("aiRecsContainer");
+    container.innerHTML = "";
+    
+    if (data.recommendations && data.recommendations.length > 0) {
+      data.recommendations.forEach((rec, idx) => {
+        const item = document.createElement("div");
+        item.className = "p-4 mb-3 rounded border";
+        item.style.borderColor = "var(--border-subtle) !important";
+        item.style.background = "rgba(14, 165, 233, 0.03)";
+        item.innerHTML = `
+          <div class="d-flex align-items-start gap-3">
+            <div class="bg-cyan-subtle text-cyan p-2 rounded-circle mt-1 flex-shrink-0" style="background: rgba(14,165,233,0.1);">
+              <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <h5 class="mb-1" style="color: var(--text-main); font-size: 1.05rem;">${escapeHtml(rec.title)}</h5>
+              <p class="mb-0 text-muted" style="font-size: 0.9rem;">${escapeHtml(rec.detail)}</p>
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+      lucide.createIcons();
+    } else {
+      container.innerHTML = `<p class="text-muted">No specific inefficiencies found for this building based on recent history.</p>`;
+    }
+    
+  } catch (err) {
+    console.error(err);
+    alert(err.message || String(err));
+  } finally {
+    btn.innerHTML = `<i data-lucide="zap" style="width:16px;height:16px;"></i> Generate Insights`;
+    btn.disabled = false;
+    lucide.createIcons();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await populateBuildings();
+  const sel = document.getElementById("buildingSelect");
+  if (preselectBuilding) {
+    sel.value = preselectBuilding;
+    setTimeout(fetchRecommendations, 100);
+  }
+  document.getElementById("runBtn").addEventListener("click", fetchRecommendations);
+});
+</script>
+{% endblock %}

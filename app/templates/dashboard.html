@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% set active_page = 'dashboard' %}
+
+{% block title %}Executive Dashboard | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">Executive Command Center</h1>
+      <p class="page-subtitle">Real-time platform overview and predictive intelligence.</p>
+    </div>
+    
+    <div class="d-flex gap-3 align-items-center">
+      <div style="min-width: 240px;">
+        <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
+          <option value="">Loading facilities...</option>
+        </select>
+      </div>
+      <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2 m-0" style="width:auto;">
+        <i data-lucide="play" style="width:16px;height:16px;"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Strip (6 Cards) -->
+  <div class="row g-3 mb-4">
+    <!-- 1. Current Energy -->
+    <div class="col-6 col-lg-2">
+      <div class="b2b-card">
+        <h3 class="b2b-card-title"><i data-lucide="zap"></i> Current Load</h3>
+        <div class="mt-auto pt-2">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value" id="kpiCurrentKwh">—</div>
+            <div class="kpi-unit">kWh</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 2. Predicted Energy -->
+    <div class="col-6 col-lg-2">
+      <div class="b2b-card">
+        <h3 class="b2b-card-title text-cyan"><i data-lucide="bar-chart-2"></i> Predicted</h3>
+        <div class="mt-auto pt-2">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value" id="kpiPredictedKwh">—</div>
+            <div class="kpi-unit">kWh</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 3. Forecast Accuracy -->
+    <div class="col-6 col-lg-2">
+      <div class="b2b-card">
+        <h3 class="b2b-card-title text-success"><i data-lucide="target"></i> Accuracy</h3>
+        <div class="mt-auto pt-2">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value" id="kpiAccuracy">—</div>
+            <div class="kpi-unit">%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 4. Current Spend -->
+    <div class="col-6 col-lg-2">
+      <div class="b2b-card">
+        <h3 class="b2b-card-title"><i data-lucide="indian-rupee"></i> Act. Spend</h3>
+        <div class="mt-auto pt-2">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value kpi-inr" id="costCurrent">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 5. Estimated Savings -->
+    <div class="col-6 col-lg-2">
+      <div class="b2b-card">
+        <h3 class="b2b-card-title" style="color:var(--accent-warning);"><i data-lucide="leaf"></i> Est. Savings</h3>
+        <div class="mt-auto pt-2">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value kpi-inr" id="potentialSavings" style="color:var(--accent-warning);">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 6. Active Alerts -->
+    <div class="col-6 col-lg-2">
+      <div class="b2b-card">
+        <h3 class="b2b-card-title text-danger"><i data-lucide="alert-triangle"></i> Alerts</h3>
+        <div class="mt-auto pt-2">
+          <div class="d-flex align-items-baseline">
+            <div class="kpi-value text-danger" id="activeAlertsCount">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-xl-9">
+      <div class="b2b-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="b2b-card-title mb-0">
+            <i data-lucide="activity"></i> Actual vs Predicted Consumption
+          </h3>
+          <span class="badge-custom" id="modelBadge">RandomForest</span>
+        </div>
+        <div class="chart-container large">
+          <canvas id="energyChart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-xl-3">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-4">
+          <i data-lucide="server"></i> Platform Status
+        </h3>
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex justify-content-between align-items-center pb-2" style="border-bottom:1px solid var(--border-subtle);">
+            <span class="text-muted" style="font-size:13px;">System Health</span>
+            <span class="text-success fw-bold" style="font-size:13px;">Online</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center pb-2" style="border-bottom:1px solid var(--border-subtle);">
+            <span class="text-muted" style="font-size:13px;">Data Pipeline</span>
+            <span class="text-success fw-bold" style="font-size:13px;">Active</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center pb-2" style="border-bottom:1px solid var(--border-subtle);">
+            <span class="text-muted" style="font-size:13px;">Forecast Engine</span>
+            <span class="text-success fw-bold" style="font-size:13px;">Synchronized</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center pb-2" style="border-bottom:1px solid var(--border-subtle);">
+            <span class="text-muted" style="font-size:13px;">Last Sync</span>
+            <span class="text-white fw-bold" style="font-size:13px;" id="lastSyncTime">Just now</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size:13px;">Facility Selected</span>
+            <span class="text-white fw-bold" style="font-size:13px;" id="statusFacility">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Section -->
+  <div class="row g-4">
+    <div class="col-12 col-lg-6">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-3">
+          <i data-lucide="clock"></i> Recent Activity
+        </h3>
+        <div class="d-flex flex-column gap-3" id="recentActivityList">
+          <div class="d-flex align-items-start gap-2">
+            <i data-lucide="check-circle" class="text-success mt-1" style="width:14px;height:14px;"></i>
+            <div>
+              <div style="font-size:13px; color:var(--text-main);">Forecast generated successfully</div>
+              <div style="font-size:12px; color:var(--text-muted);">Just now</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-start gap-2">
+            <i data-lucide="upload-cloud" class="text-cyan mt-1" style="width:14px;height:14px;"></i>
+            <div>
+              <div style="font-size:13px; color:var(--text-main);">Dataset synchronization complete</div>
+              <div style="font-size:12px; color:var(--text-muted);">1 hour ago</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-start gap-2">
+            <i data-lucide="settings" class="text-muted mt-1" style="width:14px;height:14px;"></i>
+            <div>
+              <div style="font-size:13px; color:var(--text-main);">System configuration updated</div>
+              <div style="font-size:12px; color:var(--text-muted);">Yesterday</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-lg-6">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-3">
+          <i data-lucide="bell"></i> Quick Alerts Summary
+        </h3>
+        <div class="d-flex flex-column gap-3" id="alertsBox">
+          <p class="placeholder-text mb-0">Scanning telemetry...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden inputs for legacy app.js compatibility if needed -->
+<input type="hidden" id="rateInput" value="{{ settings.tariff_rate }}" />
+<input type="hidden" id="horizonInput" value="{{ settings.forecast_horizon }}" />
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% set active_page = 'forecasting' %}
+
+{% block title %}Forecasting | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  <div class="page-header d-flex justify-content-between align-items-end">
+    <div>
+      <h1 class="page-title">Predictive Forecasting</h1>
+      <p class="page-subtitle">AI-driven energy load prediction and horizon planning.</p>
+    </div>
+    
+    <div class="d-flex gap-3 align-items-center">
+      <div style="min-width: 200px;">
+        <select class="form-select bg-dark text-white border-secondary" id="buildingSelect">
+          <option value="">Loading buildings...</option>
+        </select>
+      </div>
+      <button id="runBtn" class="btn-primary d-inline-flex align-items-center gap-2">
+        <i data-lucide="play" style="width:16px;height:16px;"></i> Run Forecast
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="b2b-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h3 class="b2b-card-title mb-0">
+            <i data-lucide="activity"></i> Demand Projection ({{ settings.forecast_horizon }}h)
+          </h3>
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+            Model: <span id="modelBadge">RandomForestRegressor</span>
+          </span>
+        </div>
+        <div class="chart-container large" style="height: 400px;">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-3">
+          <i data-lucide="calendar"></i> Future Summary
+        </h3>
+        <table class="table table-borderless table-sm">
+          <tbody>
+            <tr>
+              <td class="text-muted w-50">Predicted Load</td>
+              <td class="fw-medium text-white text-end" id="fcTotalLoad">-- kWh</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Estimated Cost</td>
+              <td class="fw-medium text-danger text-end" id="fcTotalCost">--</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Confidence / Score</td>
+              <td class="fw-medium text-success text-end">High (Based on RF Error)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let forecastChartInst = null;
+const preselectBuilding = "{{ preselect_building }}";
+
+async function runForecast() {
+  const building = document.getElementById("buildingSelect").value;
+  if (!building) return;
+  
+  const btn = document.getElementById("runBtn");
+  btn.textContent = "Forecasting...";
+  btn.disabled = true;
+  
+  try {
+    const url = `/api/insights?building_id=${encodeURIComponent(building)}`;
+    const data = await fetchJSON(url);
+    
+    // Update Summaries
+    document.getElementById("modelBadge").textContent = data.model_info.model;
+    document.getElementById("fcTotalLoad").textContent = fmtNum(data.summary.future_predicted_kwh) + " kWh";
+    document.getElementById("fcTotalCost").textContent = fmtINR(data.summary.future_predicted_cost);
+    
+    // Render Chart
+    const futureRows = data.fact_table.filter(r => r.is_future);
+    const histRows = data.fact_table.filter(r => !r.is_future).slice(-72); // last 72 hours of history context
+    
+    const combined = [...histRows, ...futureRows];
+    
+    const labels = combined.map(r => r.timestamp);
+    const actual = combined.map(r => r.is_future ? null : r.actual_kwh);
+    const predicted = combined.map(r => r.predicted_kwh);
+    
+    if (forecastChartInst) forecastChartInst.destroy();
+    
+    chartDefaults();
+    const ctx = document.getElementById('forecastChart');
+    forecastChartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Actual (Recent History)",
+            data: actual,
+            borderColor: "rgba(148, 163, 184, 0.7)",
+            backgroundColor: "rgba(148, 163, 184, 0.1)",
+            borderWidth: 2,
+            tension: 0.2
+          },
+          {
+            label: "Forecast",
+            data: predicted,
+            borderColor: "rgba(16, 185, 129, 1)",
+            backgroundColor: "rgba(16, 185, 129, 0.1)",
+            borderDash: [5, 5],
+            borderWidth: 2,
+            tension: 0.2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom" }
+        },
+        scales: {
+          x: { ticks: { maxTicksLimit: 12, color: CHART_TEXT }, grid: { color: CHART_GRID } },
+          y: { beginAtZero: true, ticks: { color: CHART_TEXT }, grid: { color: CHART_GRID } }
+        }
+      }
+    });
+    
+  } catch (err) {
+    console.error(err);
+    alert(err.message || String(err));
+  } finally {
+    btn.innerHTML = `<i data-lucide="play" style="width:16px;height:16px;"></i> Run Forecast`;
+    btn.disabled = false;
+    lucide.createIcons();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await populateBuildings();
+  const sel = document.getElementById("buildingSelect");
+  if (preselectBuilding) {
+    sel.value = preselectBuilding;
+    setTimeout(runForecast, 100);
+  }
+  document.getElementById("runBtn").addEventListener("click", runForecast);
+});
+</script>
+{% endblock %}

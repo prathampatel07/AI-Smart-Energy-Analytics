@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% set active_page = 'upload' %}
+
+{% block title %}Data Ingestion | Energy Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-4 position-relative">
+  
+  <div class="page-header">
+    <h1 class="page-title">Data Ingestion Pipeline</h1>
+    <p class="page-subtitle">Upload CSV telemetry data for AI-powered processing and forecasting.</p>
+  </div>
+
+  <div class="row g-4 align-items-stretch">
+    <!-- Upload Form -->
+    <div class="col-12 col-lg-5">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-4">
+          <i data-lucide="upload-cloud"></i> Upload Telemetry Data
+        </h3>
+        
+        <p class="text-muted mb-4" style="font-size: 0.85rem;">
+          Required schema:
+          <span class="badge-custom">timestamp</span>
+          <span class="badge-custom">building_id</span>
+          <span class="badge-custom">energy_kwh</span>
+        </p>
+
+        {% if error %}
+        <div class="alert mb-4" style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--accent-danger); color: var(--text-main); font-size: 0.85rem;">
+          <i data-lucide="alert-circle" style="width: 16px; height: 16px; margin-right: 4px; color: var(--accent-danger);"></i>
+          {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3 flex-grow-1">
+          <div class="upload-zone d-flex flex-column justify-content-center align-items-center flex-grow-1 mb-3">
+            <i data-lucide="file-spreadsheet" class="upload-icon" style="width: 48px; height: 48px;"></i>
+            <p class="text-muted mb-3" style="font-size: 0.85rem;">Select a valid CSV file to begin ingestion.</p>
+            <input class="form-control w-75" type="file" name="file" accept=".csv" required />
+          </div>
+          <button type="submit" class="btn-primary w-100">
+            <i data-lucide="upload" style="width:16px; height:16px;"></i> Execute Upload
+          </button>
+        </form>
+        
+        <p class="text-muted small mt-4 mb-0" style="font-size: 0.75rem;">
+          Note: Optional columns like <code class="text-cyan">tariff</code> or <code class="text-cyan">temperature</code> will be preserved in the data warehouse.
+        </p>
+      </div>
+    </div>
+
+    <!-- Platform Capabilities -->
+    <div class="col-12 col-lg-7">
+      <div class="b2b-card h-100">
+        <h3 class="b2b-card-title mb-4">
+          <i data-lucide="info"></i> Processing Pipeline Capabilities
+        </h3>
+        
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-6">
+            <div class="rec-item h-100">
+              <i data-lucide="trending-up"></i>
+              <div>
+                <div class="rec-title">Predictive Forecasting</div>
+                <div class="rec-detail">Machine learning models generate accurate baselines and future horizons.</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="rec-item h-100">
+              <i data-lucide="wallet"></i>
+              <div>
+                <div class="rec-title">Financial Impact Analysis</div>
+                <div class="rec-detail">Translate energy deviations directly into actionable financial metrics.</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="rec-item h-100">
+              <i data-lucide="alert-triangle"></i>
+              <div>
+                <div class="rec-title">Anomaly Detection</div>
+                <div class="rec-detail">Automated alerts flag inefficiencies and abnormal consumption spikes.</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="rec-item h-100">
+              <i data-lucide="building-2"></i>
+              <div>
+                <div class="rec-title">Multi-Facility Scaling</div>
+                <div class="rec-detail">Process thousands of facilities simultaneously using the building_id schema.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-auto p-3 rounded-3" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle);">
+          <div class="d-flex align-items-center gap-2 mb-1" style="color: var(--accent-success); font-weight: 600; font-size: 0.85rem;">
+            <i data-lucide="code" style="width: 16px; height: 16px;"></i> Testing & Validation
+          </div>
+          <div class="text-muted" style="font-size: 0.75rem;">
+            Generate synthetic baseline data: <code class="text-cyan bg-transparent p-0">python scripts\generate_sample_data.py --out data\sample_energy.csv</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
