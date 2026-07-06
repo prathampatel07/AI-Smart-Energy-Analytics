@@ -114,7 +114,7 @@ def train_and_forecast_for_building(
                 "is_weekend": tf["is_weekend"].iloc[0],
             }
         )
-        row = row.fillna(method="ffill", axis=0).fillna(all_values.mean() if len(all_values) else 0.0)
+        row = row.ffill(axis=0).fillna(all_values.mean() if len(all_values) else 0.0)
 
         pred = float(model.predict(row[feature_cols].to_numpy())[0])
         pred = max(pred, 0.0)
