@@ -51,7 +51,7 @@ def train_and_forecast_for_building(
     facts: pd.DataFrame,
     building_id: str,
     horizon_hours: int,
-    freq: str = "H",
+    freq: str = "h",
 ) -> ForecastResult:
     """
     Trains one model per building (scales across buildings via building partitioning).
