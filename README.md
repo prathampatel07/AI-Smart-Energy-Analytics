@@ -1,7 +1,7 @@
 # Smart Energy Analytics Platform
 
  **Live Demo:**  
-<ai-smart-energy-analytics-production.up.railway.app>  
+ https://ai-smart-energy-analytics.onrender.com
 
 *This application is deployed on Railway and can be accessed directly through the link above. No local installation is required to explore the platform.*
 
